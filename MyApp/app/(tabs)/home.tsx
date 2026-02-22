@@ -1,62 +1,53 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
 export default function HomeScreen() {
-
   const handleLogout = async () => {
-
     await AsyncStorage.removeItem("accessToken");
 
     router.replace("/auth");
-
   };
 
   return (
-
     <View style={styles.container}>
-
       <View style={styles.content}>
-
         <Image
           source={require("../../assets/images/logo.png")}
           style={styles.logo}
         />
 
-        <Text style={styles.title}>
-          Welcome to Pylotix
-        </Text>
+        <Text style={styles.title}>Welcome to Pylotix</Text>
 
-        <Text style={styles.subtitle}>
-          Your dashboard is ready.
-        </Text>
-
+        <Text style={styles.subtitle}>Your dashboard is ready.</Text>
       </View>
-
       <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleLogout}
+        style={{
+          marginTop: 20,
+          backgroundColor: "#2563EB",
+          padding: 15,
+          borderRadius: 10,
+        }}
+        onPress={() => router.push("/createRoadmap")}
       >
-        <Text style={styles.logoutText}>
-          Logout
+        <Text
+          style={{
+            color: "white",
+            fontWeight: "bold",
+          }}
+        >
+          Create Roadmap
         </Text>
       </TouchableOpacity>
-
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
     </View>
-
   );
-
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -99,5 +90,4 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
     fontWeight: "bold",
   },
-
 });
