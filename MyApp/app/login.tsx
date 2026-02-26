@@ -1,4 +1,4 @@
-import LoginScreen from "./(tabs)/LoginScreen";
+import LoginScreen from "./auth/LoginScreen";
 
 export default function Login() {
   return <LoginScreen />;

@@ -56,7 +56,7 @@ export default function LoginScreen() {
         // ✅ SAVE TOKEN
         await AsyncStorage.setItem("accessToken", data.accessToken);
 
-        router.replace("/(tabs)/home");
+        router.replace("../(tabs)/home");
       } else {
         Alert.alert("Error", data.message);
       }

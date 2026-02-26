@@ -14,7 +14,9 @@ import {
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView, MotiText } from "moti";
-import { authFetch, API_BASE } from "../services/api";
+import { authFetch } from "../../services/api";
+
+const API_BASE = "https://st-v01.onrender.com";
 
 const { width, height } = Dimensions.get("window");
 
@@ -27,7 +29,9 @@ export default function CreateRoadmap() {
 
   // Shared Theme Palette
   const theme = {
-    bg: isDark ? ["#050A0E", "#0D161F"] : ["#F8FAFC", "#F1F5F9"],
+    bg: isDark
+      ? (["#050A0E", "#0D161F"] as [string, string])
+      : (["#F8FAFC", "#F1F5F9"] as [string, string]),
     accent: isDark ? "#00F2FE" : "#2563EB",
     inputBg: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.9)",
     text: isDark ? "#FFFFFF" : "#1E293B",
@@ -36,14 +40,25 @@ export default function CreateRoadmap() {
 
   const handleNext = async () => {
     if (!topic) return;
+
     try {
       setLoading(true);
+
       const res = await authFetch(`${API_BASE}/roadmap/getQuestions`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ topic }),
       });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.log("SERVER ERROR:", text);
+        throw new Error("Server failed");
+      }
+
       const data = await res.json();
-      setLoading(false);
 
       router.push({
         pathname: "/roadmaps/questions",
@@ -53,8 +68,9 @@ export default function CreateRoadmap() {
         },
       });
     } catch (err) {
+      console.log("NETWORK ERROR:", err);
+    } finally {
       setLoading(false);
-      console.error(err);
     }
   };
 
@@ -63,7 +79,10 @@ export default function CreateRoadmap() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <LinearGradient colors={theme.bg} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={theme.bg as [string, string]}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={styles.centerContent}>
         {/* --- 3D Floating Orb Asset --- */}
@@ -81,22 +100,21 @@ export default function CreateRoadmap() {
               loop: true,
               duration: 2000,
               type: "timing",
-              reverse: true,
+              repeatReverse: true,
             }}
             style={[styles.mainOrb, { shadowColor: theme.accent }]}
           >
             <LinearGradient
               colors={[theme.accent, isDark ? "#4FACFE" : "#1E40AF"]}
               style={StyleSheet.absoluteFill}
-              border-radius={60}
             />
           </MotiView>
         </View>
 
         {/* --- Text Content --- */}
         <MotiView
-          from={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
           transition={{ delay: 200 }}
           style={styles.textGroup}
         >
@@ -144,8 +162,7 @@ export default function CreateRoadmap() {
               <ActivityIndicator color="white" />
             ) : (
               <MotiText
-                animate={{ letterSpacing: topic ? 2 : 1 }}
-                style={styles.buttonText}
+                style={[styles.buttonText, { letterSpacing: topic ? 2 : 1 }]}
               >
                 INITIALIZE SYNC
               </MotiText>

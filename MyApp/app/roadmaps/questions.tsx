@@ -13,7 +13,9 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { authFetch, API_BASE } from "../services/api";
+import { authFetch } from "../../services/api";
+
+const API_BASE = "https://st-v01.onrender.com";
 
 const { width } = Dimensions.get("window");
 

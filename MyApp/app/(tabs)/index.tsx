@@ -1,49 +1,26 @@
-import { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect } from "react";
 import { router } from "expo-router";
-
-import WelcomeScreen from "./WelcomeScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, ActivityIndicator } from "react-native";
 
 export default function Index() {
-
-  const [checking, setChecking] = useState(true);
-
   useEffect(() => {
-
-    const checkLogin = async () => {
-
-      const token =
-        await AsyncStorage.getItem("accessToken");
-
-      if (token) {
-
-        router.replace("/(tabs)/home");
-
-      }
-
-      setChecking(false);
-
-    };
-
-    checkLogin();
-
+    check();
   }, []);
 
-  if (checking) {
+  async function check() {
+    const token = await AsyncStorage.getItem("accessToken");
 
-    return (
-      <View style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
-      }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-
+    if (token) {
+      router.replace("/(tabs)/home");
+    } else {
+      router.replace("/auth/WelcomeScreen");
+    }
   }
 
-  return <WelcomeScreen />;
-
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
 }

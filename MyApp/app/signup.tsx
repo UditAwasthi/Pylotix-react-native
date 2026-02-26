@@ -1,4 +1,4 @@
-import SignupScreen from "./(tabs)/SignupScreen";
+import SignupScreen from "./auth/SignupScreen";
 
 export default function Signup() {
   return <SignupScreen />;
