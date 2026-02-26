@@ -2,6 +2,105 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API = "https://st-v01.onrender.com";
 
+const SYNC_QUEUE = "SYNC_QUEUE";
+
+let isSyncing = false;
+
+/* ========================
+ADD TO QUEUE
+======================== */
+
+export async function addToSyncQueue(item: any) {
+  const queueRaw = await AsyncStorage.getItem(SYNC_QUEUE);
+
+  const queue = queueRaw ? JSON.parse(queueRaw) : [];
+
+  queue.push({
+    ...item,
+    id: Date.now(),
+    retry: 0,
+  });
+
+  await AsyncStorage.setItem(SYNC_QUEUE, JSON.stringify(queue));
+
+  runSync();
+}
+
+/* ========================
+MAIN SYNC WORKER
+======================== */
+
+export async function runSync() {
+  if (isSyncing) return;
+
+  isSyncing = true;
+
+  try {
+    const token = await AsyncStorage.getItem("accessToken");
+
+    if (!token) return;
+
+    let queueRaw = await AsyncStorage.getItem(SYNC_QUEUE);
+
+    if (!queueRaw) return;
+
+    let queue = JSON.parse(queueRaw);
+
+    let newQueue = [];
+
+    for (let item of queue) {
+      try {
+        await syncItem(item, token);
+      } catch (e) {
+        item.retry++;
+
+        if (item.retry < 5) newQueue.push(item);
+      }
+    }
+
+    await AsyncStorage.setItem(SYNC_QUEUE, JSON.stringify(newQueue));
+  } finally {
+    isSyncing = false;
+  }
+}
+
+/* ========================
+SYNC ITEM TYPE HANDLER
+======================== */
+
+async function syncItem(item: any, token: string) {
+  switch (item.type) {
+    case "progress":
+      await fetch(`${API}/progress/update`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(item.data),
+      });
+
+      break;
+
+    case "certificate":
+      await fetch(`${API}/course/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(item.data),
+      });
+
+      break;
+  }
+}
+
+/* ========================
+AUTO SYNC EVERY 15 SEC
+======================== */
+
+setInterval(runSync, 15000);
 /* =========================================
    UPDATE COURSE PROGRESS
    POST /progress/update

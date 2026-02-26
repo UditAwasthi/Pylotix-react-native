@@ -8,16 +8,24 @@ import {
   SafeAreaView,
   ActivityIndicator,
   StatusBar,
+  useColorScheme,
+  Platform,
 } from "react-native";
-
 import { useLocalSearchParams, router } from "expo-router";
-import { ArrowLeft, BookOpen, GraduationCap, Code2 } from "lucide-react-native";
+import { MotiView } from "moti";
+import { Easing } from "react-native-reanimated";
+import { ArrowLeft, GraduationCap, Code2, Cpu, Zap } from "lucide-react-native";
 
 import { getCourse, saveProgress } from "../../services/courseStorage";
 import { syncProgress } from "../../services/syncService";
 
+const MONO = Platform.OS === "ios" ? "Menlo" : "monospace";
+
 export default function Learn() {
   const params = useLocalSearchParams();
+  const isDark = useColorScheme() === "dark";
+
+  // URL Parameter Handling
   const courseId = Array.isArray(params.courseId)
     ? params.courseId[0]
     : params.courseId;
@@ -35,109 +43,208 @@ export default function Learn() {
   const [topic, setTopic] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const theme = {
+    bg: isDark ? "#020205" : "#F4F7FF",
+    card: isDark ? "#0A0A0F" : "#FFFFFF",
+    accent: "#00F2FE",
+    text: isDark ? "#E0E0E0" : "#1A1A1A",
+    muted: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.5)",
+    border: isDark ? "rgba(0, 242, 254, 0.2)" : "#E2E8F0",
+  };
+
   useEffect(() => {
-    if (!courseId) return;
-    load();
-  }, [courseId]);
+    if (courseId) load();
+  }, [courseId, chapterIndex, topicIndex]);
 
   async function load() {
     try {
+      setLoading(true); // Ensure loader shows during index switches
       const course = await getCourse(courseId as string);
+
       if (!course || !course.chapters?.[chapterIndex]?.topics?.[topicIndex]) {
-        setLoading(false);
+        console.warn(
+          "Topic synchronization failed: Data not found in local storage.",
+        );
+        setTopic(null);
         return;
       }
+
       const currentTopic = course.chapters[chapterIndex].topics[topicIndex];
       setTopic(currentTopic);
 
       await saveProgress(courseId, { chapterIndex, topicIndex });
       syncProgress(courseId, chapterIndex, topicIndex);
     } catch (e) {
-      console.log("Learn Load Error:", e);
+      console.error("Neural Link Load Error:", e);
     } finally {
       setLoading(false);
     }
   }
 
-  if (loading) {
+  /* --- SAFETY GUARD: PREVENTS NULL POINTER CRASH --- */
+  if (loading || !topic) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563EB" />
+      <View style={[styles.center, { backgroundColor: theme.bg }]}>
+        <ActivityIndicator size="large" color={theme.accent} />
+        <MotiView
+          from={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ loop: true, duration: 1000 }}
+        >
+          <Text
+            style={[
+              styles.mono,
+              { color: theme.accent, marginTop: 20, fontSize: 10 },
+            ]}
+          >
+            ESTABLISHING_NEURAL_UPLINK...
+          </Text>
+        </MotiView>
       </View>
     );
   }
 
-  if (!topic) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Topic not found</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
+  /* --- MAIN UI: ONLY RUNS IF TOPIC IS VALID --- */
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* HEADER */}
-      <View style={styles.navBar}>
+      {/* TOP HUD NAVIGATION */}
+      <View style={[styles.navBar, { borderBottomColor: theme.border }]}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-          <ArrowLeft size={22} color="#1F2937" />
+          <ArrowLeft size={20} color={theme.accent} />
         </TouchableOpacity>
         <View style={styles.navInfo}>
-          <Text style={styles.navSubtitle}>CHAPTER {chapterIndex + 1}</Text>
-          <Text style={styles.navTitle}>Lesson {topicIndex + 1}</Text>
+          <Text
+            style={[styles.mono, styles.navSubtitle, { color: theme.muted }]}
+          >
+            NODE_SYNC_0{chapterIndex + 1}
+          </Text>
+          <Text style={[styles.navTitle, { color: theme.text }]}>
+            PACKET_{topicIndex + 1}
+          </Text>
         </View>
-        <View style={{ width: 40 }} />
+        <Cpu size={20} color={theme.muted} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* TOPIC HEADER */}
-        <View style={styles.headerSection}>
-          <View style={styles.badge}>
-            <BookOpen size={14} color="#2563EB" />
-            <Text style={styles.badgeText}>Learning Material</Text>
+        {/* PROGRESS BAR HUD */}
+        <View style={styles.progressContainer}>
+          <View
+            style={[styles.progressBarBase, { backgroundColor: theme.border }]}
+          >
+            <MotiView
+              from={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 1500,
+                type: "timing",
+                easing: Easing.out(Easing.quad),
+              }}
+              style={[
+                styles.progressBarFill,
+                { backgroundColor: theme.accent },
+              ]}
+            />
           </View>
-          <Text style={styles.title}>{topic.title}</Text>
-          <Text style={styles.desc}>{topic.content.description}</Text>
+          <Text
+            style={[
+              styles.mono,
+              { fontSize: 8, color: theme.accent, marginTop: 5 },
+            ]}
+          >
+            DECRYPTING_DATA_STREAM...
+          </Text>
         </View>
 
-        {/* CONTENT SECTIONS */}
-        {topic.content.sections.map((s: any, i: number) => {
-          if (s.type === "text") {
-            return (
-              <Text key={i} style={styles.text}>
-                {s.value}
-              </Text>
-            );
-          }
+        {/* HEADER SECTION */}
+        <MotiView
+          from={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 200 }}
+        >
+          <View style={styles.badge}>
+            <Zap size={10} color={theme.accent} />
+            <Text
+              style={[styles.mono, styles.badgeText, { color: theme.accent }]}
+            >
+              LIVE_UPLINK
+            </Text>
+          </View>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {topic.title?.toUpperCase()}
+          </Text>
+          <Text style={[styles.desc, { color: theme.muted }]}>
+            {topic.content?.description}
+          </Text>
+        </MotiView>
 
-          if (s.type === "code_example") {
-            return (
-              <View key={i} style={styles.codeContainer}>
-                <View style={styles.codeHeader}>
-                  <Code2 size={16} color="#9CA3AF" />
-                  <Text style={styles.codeHeaderTitle}>Example Code</Text>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <Text style={styles.codeText}>{s.code}</Text>
-                </ScrollView>
-              </View>
-            );
-          }
-          return null;
-        })}
+        {/* CONTENT PACKETS */}
+        <View style={styles.contentBody}>
+          {topic.content?.sections?.map((s: any, i: number) => {
+            if (s.type === "text") {
+              return (
+                <MotiView
+                  key={i}
+                  from={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 400 + i * 100 }}
+                >
+                  <Text style={[styles.text, { color: theme.text }]}>
+                    {s.value}
+                  </Text>
+                </MotiView>
+              );
+            }
 
-        {/* FOOTER ACTION */}
+            if (s.type === "code_example") {
+              return (
+                <MotiView
+                  key={i}
+                  from={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 500 }}
+                >
+                  <View
+                    style={[
+                      styles.codeContainer,
+                      { borderColor: theme.border },
+                    ]}
+                  >
+                    <View style={styles.codeHeader}>
+                      <Code2 size={14} color={theme.accent} />
+                      <Text
+                        style={[
+                          styles.mono,
+                          { color: theme.accent, fontSize: 10 },
+                        ]}
+                      >
+                        SOURCE_DECRYPTION
+                      </Text>
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                    >
+                      <Text style={[styles.codeText, { color: theme.accent }]}>
+                        {s.code}
+                      </Text>
+                    </ScrollView>
+                  </View>
+                </MotiView>
+              );
+            }
+            return null;
+          })}
+        </View>
+
+        {/* TERMINAL FOOTER ACTION */}
         <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.quizBtn}
+          activeOpacity={0.9}
+          style={[styles.quizBtn, { backgroundColor: theme.accent }]}
           onPress={() =>
             router.push({
               pathname: "/course/quiz",
@@ -145,129 +252,86 @@ export default function Learn() {
             })
           }
         >
-          <GraduationCap size={20} color="white" />
-          <Text style={styles.quizBtnText}>Test Your Knowledge</Text>
+          <GraduationCap size={20} color="#000" />
+          <Text style={styles.quizBtnText}>COMMENCE_EVALUATION</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-
-  // Navigation
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  mono: { fontFamily: MONO, letterSpacing: 1 },
   navBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
   },
-  iconBtn: {
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: "#F9FAFB",
-  },
+  iconBtn: { padding: 8 },
   navInfo: { alignItems: "center" },
-  navSubtitle: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#9CA3AF",
-    letterSpacing: 1,
-  },
-  navTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-
-  // Content
-  scrollContent: { padding: 24 },
-  headerSection: { marginBottom: 24 },
+  navSubtitle: { fontSize: 8, fontWeight: "800" },
+  navTitle: { fontSize: 14, fontWeight: "900", letterSpacing: 2 },
+  progressContainer: { paddingHorizontal: 25, marginTop: 20 },
+  progressBarBase: { height: 2, width: "100%", borderRadius: 1 },
+  progressBarFill: { height: "100%", borderRadius: 1 },
+  scrollContent: { padding: 25 },
   badge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginBottom: 12,
+    marginBottom: 15,
     gap: 6,
   },
-  badgeText: { fontSize: 12, fontWeight: "600", color: "#2563EB" },
-  title: { fontSize: 30, fontWeight: "800", color: "#111827", lineHeight: 36 },
-  desc: {
-    marginTop: 12,
-    fontSize: 17,
-    color: "#4B5563",
-    lineHeight: 26,
-    fontWeight: "500",
-  },
-
-  text: {
-    marginTop: 20,
-    fontSize: 16,
-    lineHeight: 26,
-    color: "#374151",
-  },
-
-  // Code Block
+  badgeText: { fontSize: 9, fontWeight: "800" },
+  title: { fontSize: 26, fontWeight: "200", letterSpacing: 4, lineHeight: 32 },
+  desc: { marginTop: 15, fontSize: 14, lineHeight: 22, fontWeight: "400" },
+  contentBody: { marginTop: 20 },
+  text: { marginTop: 20, fontSize: 15, lineHeight: 26, fontWeight: "400" },
   codeContainer: {
-    backgroundColor: "#1F2937",
-    borderRadius: 12,
-    marginTop: 24,
+    backgroundColor: "#000",
+    borderRadius: 4,
+    marginTop: 30,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#374151",
   },
   codeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#374151",
-    backgroundColor: "#111827",
-    gap: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: "rgba(0, 242, 254, 0.05)",
+    gap: 10,
   },
-  codeHeaderTitle: { color: "#9CA3AF", fontSize: 12, fontWeight: "600" },
   codeText: {
-    padding: 16,
-    color: "#F3F4F6",
-    fontFamily: "monospace", // or a specific loaded font like 'Courier'
-    fontSize: 14,
+    padding: 20,
+    fontFamily: MONO,
+    fontSize: 13,
     lineHeight: 20,
+    opacity: 0.9,
   },
-
-  // Button
   quizBtn: {
     flexDirection: "row",
-    backgroundColor: "#2563EB",
-    paddingVertical: 16,
-    marginTop: 40,
+    paddingVertical: 20,
+    marginTop: 50,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
-    gap: 10,
-    // Shadow
-    shadowColor: "#2563EB",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 2,
+    gap: 12,
+    shadowColor: "#00F2FE",
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  quizBtnText: { color: "white", fontSize: 16, fontWeight: "700" },
-
-  // Error/Loading
-  errorText: { fontSize: 16, color: "#6B7280", marginBottom: 16 },
-  backBtn: { padding: 12, backgroundColor: "#F3F4F6", borderRadius: 8 },
-  backBtnText: { fontWeight: "600", color: "#111827" },
+  quizBtnText: {
+    color: "black",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
 });

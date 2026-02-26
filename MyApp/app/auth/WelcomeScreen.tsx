@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   useColorScheme,
   Image,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { MotiView, MotiText } from "moti";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 import { Gyroscope } from "expo-sensors";
+import { Zap, ChevronRight, Cpu, ShieldCheck } from "lucide-react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -19,9 +21,10 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 
+const MONO = Platform.OS === "ios" ? "Menlo" : "monospace";
+
 export default function WelcomeScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useColorScheme() === "dark";
 
   // Parallax Logic
   const gyroX = useSharedValue(0);
@@ -37,9 +40,8 @@ export default function WelcomeScreen() {
   }, []);
 
   const animatedHeroStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(gyroY.value, [-2, 2], [-15, 15]);
-    const rotateX = interpolate(gyroX.value, [-2, 2], [15, -15]);
-
+    const rotateY = interpolate(gyroY.value, [-2, 2], [-10, 10]);
+    const rotateX = interpolate(gyroX.value, [-2, 2], [10, -10]);
     return {
       transform: [
         { perspective: 1000 },
@@ -50,208 +52,217 @@ export default function WelcomeScreen() {
   });
 
   const theme = {
-    background: isDark ? "#0F172A" : "#FFFFFF",
-    card: isDark ? "#1E293B" : "#F8FAFC",
-    text: isDark ? "#F8FAFC" : "#1E293B",
-    primary: "#4F46E5",
-    accent: "#10B981",
+    background: "#020205", // Deepest black
+    card: "rgba(255, 255, 255, 0.03)",
+    text: "#FFFFFF",
+    primary: "#00F2FE", // Cyan Neon
+    muted: "rgba(255, 255, 255, 0.4)",
+    border: "rgba(0, 242, 254, 0.2)",
   };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Background Glow */}
-      <MotiView
-        from={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.12 }}
-        transition={{ type: "timing", duration: 2000 }}
-        style={[styles.circle, { backgroundColor: theme.primary }]}
-      />
+      <StatusBar barStyle="light-content" />
+
+      {/* BACKGROUND DECOR - NEURAL GRID */}
+      <View style={styles.backgroundOverlay}>
+        <MotiView
+          from={{ opacity: 0 }}
+          animate={{ opacity: 0.1 }}
+          transition={{ duration: 2000 }}
+          style={[styles.glowOrb, { backgroundColor: theme.primary }]}
+        />
+      </View>
 
       <View style={styles.content}>
-        {/* Your Logo with Parallax */}
+        {/* TOP HUD INFO */}
+        <View style={styles.topHud}>
+          <Cpu size={14} color={theme.primary} />
+          <Text style={[styles.mono, { color: theme.primary, fontSize: 10 }]}>
+            PROTOCOL_INIT: 0x229
+          </Text>
+        </View>
+
+        {/* HERO LOGO WITH PARALLAX */}
         <MotiView
-          from={{ opacity: 0, scale: 0.8 }}
+          from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", damping: 12 }}
           style={styles.heroSection}
         >
-          <Animated.View
-            style={[
-              styles.logoContainer,
-              { backgroundColor: theme.card },
-              animatedHeroStyle,
-            ]}
-          >
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.logo}
-            />
-            {/* Subtle "Light Reflection" Dot */}
-            <View
-              style={[styles.indicator, { backgroundColor: theme.accent }]}
+          <Animated.View style={[styles.logoWrapper, animatedHeroStyle]}>
+            <View style={[styles.logoFrame, { borderColor: theme.border }]}>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={styles.logo}
+              />
+            </View>
+            {/* Pulsing Scanner Ring */}
+            <MotiView
+              from={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1.2, opacity: 0.3 }}
+              transition={{ loop: true, duration: 2000, type: "timing" }}
+              style={[styles.scannerRing, { borderColor: theme.primary }]}
             />
           </Animated.View>
         </MotiView>
 
-        {/* Brand & Copy */}
+        {/* BRANDING SECTION */}
         <View style={styles.textSection}>
+          <View style={styles.badge}>
+            <Zap size={10} color={theme.primary} />
+            <Text style={[styles.mono, { color: theme.primary, fontSize: 9 }]}>
+              LIVE_NODE_SYNC
+            </Text>
+          </View>
+
           <MotiText
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: 500 }}
+            from={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 400 }}
             style={[styles.title, { color: theme.text }]}
           >
-            Welcome to{"\n"}
-            <Text style={{ color: theme.primary }}>Pylotix</Text>
+            PYLOTIX
           </MotiText>
 
           <MotiText
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 700 }}
-            style={[styles.subtitle, { color: isDark ? "#94A3B8" : "#64748B" }]}
+            transition={{ delay: 600 }}
+            style={[styles.subtitle, { color: theme.muted }]}
           >
-            Empowering your learning journey with precision and speed.
+            Connect to the neural stream. Experience deep-learning optimization
+            with Pylotix core.
           </MotiText>
         </View>
 
-        {/* Footer & CTA */}
+        {/* ACTION FOOTER */}
         <View style={styles.footer}>
           <MotiView
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: 900 }}
+            from={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 800 }}
           >
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.9}
               onPress={() => router.replace("/signup")}
-              style={[styles.button, { backgroundColor: theme.primary }]}
+              style={[styles.mainButton, { backgroundColor: theme.primary }]}
             >
-              <Text style={styles.buttonText}>Get Started</Text>
-              <MotiView
-                animate={{ translateX: [0, 5, 0] }}
-                transition={{ loop: true, duration: 2000, type: "timing" }}
-              >
-                <Feather
-                  name="arrow-right"
-                  size={20}
-                  color="white"
-                  style={{ marginLeft: 10 }}
-                />
-              </MotiView>
+              <Text style={[styles.mono, styles.buttonText]}>
+                INITIALIZE_SYNC
+              </Text>
+              <ChevronRight size={18} color="#000" />
             </TouchableOpacity>
           </MotiView>
 
-          <MotiText
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1100 }}
-            style={[
-              styles.loginText,
-              { color: isDark ? "#475569" : "#94A3B8" },
-            ]}
+          <TouchableOpacity
+            onPress={() => router.replace("/login")}
+            style={styles.loginLink}
           >
-            Already have an account?{" "}
-            <Text
-              onPress={() => router.replace("/login")}
-              style={{
-                color: theme.primary,
-                fontWeight: "700",
-              }}
-            >
-              Log In
+            <Text style={[styles.mono, { color: theme.muted, fontSize: 11 }]}>
+              EXISTING_UPLINK?{" "}
+              <Text style={{ color: theme.primary }}>RESUME_SESSION</Text>
             </Text>
-          </MotiText>
+          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* HUD DECORATIVE FOOTER */}
+      <View style={styles.bottomHud}>
+        <ShieldCheck size={12} color={theme.muted} />
+        <Text style={[styles.mono, { color: theme.muted, fontSize: 8 }]}>
+          ENCRYPTED_DATA_LINE_SECURED
+        </Text>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  mono: { fontFamily: MONO, letterSpacing: 2, fontWeight: "700" },
+  backgroundOverlay: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  glowOrb: {
+    position: "absolute",
+    top: -150,
+    right: -150,
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    filter: Platform.OS === "ios" ? "blur(80px)" : undefined, // Android doesn't support filter well
   },
   content: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: 35,
     justifyContent: "space-between",
-    paddingVertical: 50,
+    paddingVertical: 40,
   },
-  circle: {
+
+  // HUD Elements
+  topHud: { flexDirection: "row", alignItems: "center", gap: 10, opacity: 0.6 },
+  bottomHud: {
     position: "absolute",
-    top: -100,
-    right: -100,
-    width: 350,
-    height: 350,
-    borderRadius: 175,
-  },
-  heroSection: {
-    alignItems: "center",
-    marginTop: 20,
-  },
-  logoContainer: {
-    width: 170,
-    height: 170,
-    borderRadius: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    // Shadow for iOS
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.1,
-    shadowRadius: 25,
-    // Elevation for Android
-    elevation: 15,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain",
-  },
-  indicator: {
-    position: "absolute",
-    top: 25,
-    right: 25,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  textSection: {
-    marginTop: -30,
-  },
-  title: {
-    fontSize: 42,
-    fontWeight: "900",
-    letterSpacing: -1.5,
-    lineHeight: 48,
-  },
-  subtitle: {
-    fontSize: 18,
-    marginTop: 12,
-    lineHeight: 28,
-  },
-  footer: {
+    bottom: 20,
     width: "100%",
-  },
-  button: {
+    alignItems: "center",
     flexDirection: "row",
-    height: 64,
-    borderRadius: 20,
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  // Hero Section
+  heroSection: { alignItems: "center", justifyContent: "center" },
+  logoWrapper: {
+    width: 180,
+    height: 180,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
+  logoFrame: {
+    width: 140,
+    height: 140,
+    borderRadius: 2, // Sharp edges
+    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.02)",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
-  loginText: {
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "500",
+  logo: { width: 90, height: 90, resizeMode: "contain" },
+  scannerRing: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderStyle: "dashed",
   },
+
+  // Text
+  textSection: { marginTop: -20 },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 15,
+  },
+  title: { fontSize: 44, fontWeight: "200", letterSpacing: 10, lineHeight: 52 },
+  subtitle: { fontSize: 13, marginTop: 15, lineHeight: 22, letterSpacing: 0.5 },
+
+  // Buttons
+  footer: { width: "100%", gap: 20 },
+  mainButton: {
+    flexDirection: "row",
+    height: 60,
+    borderRadius: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#00F2FE",
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  buttonText: { color: "#000", fontSize: 13, fontWeight: "900" },
+  loginLink: { alignItems: "center", paddingVertical: 10 },
 });

@@ -11,158 +11,193 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
 } from "react-native";
 import { MotiView } from "moti";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const MONO = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useColorScheme() === "dark";
 
   const theme = {
-    background: isDark ? "#0F172A" : "#FFFFFF",
-    inputBg: isDark ? "#1E293B" : "#F1F5F9",
-    text: isDark ? "#F8FAFC" : "#1E293B",
-    placeholder: isDark ? "#64748B" : "#94A3B8",
-    primary: "#4F46E5",
+    background: "#020205", // Deep black
+    inputBg: "rgba(255, 255, 255, 0.03)",
+    text: "#FFFFFF",
+    accent: "#00F2FE", // Cyan
+    muted: "rgba(255, 255, 255, 0.4)",
+    border: "rgba(0, 242, 254, 0.2)",
   };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password");
+      Alert.alert("SYSTEM_ERROR", "Credentials required for uplink.");
       return;
     }
 
     try {
       setLoading(true);
-
       const res = await fetch("https://st-v01.onrender.com/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // ✅ SAVE TOKEN
         await AsyncStorage.setItem("accessToken", data.accessToken);
-
         router.replace("../(tabs)/home");
       } else {
-        Alert.alert("Error", data.message);
+        Alert.alert("ACCESS_DENIED", data.message);
       }
     } catch {
-      Alert.alert("Network error");
+      Alert.alert("CONNECTION_FAILURE", "Neural server unreachable.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
+      <StatusBar barStyle="light-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Logo Section */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* SECURE HEADER */}
           <MotiView
-            from={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
+            from={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             style={styles.header}
           >
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.logo}
-            />
+            <View style={[styles.logoFrame, { borderColor: theme.border }]}>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={[styles.mono, styles.version]}>SECURE_ACCESS_V4</Text>
             <Text style={[styles.title, { color: theme.text }]}>
-              Welcome Back
+              UPLINK_SESSION
             </Text>
-            <Text style={[styles.subtitle, { color: theme.placeholder }]}>
-              Sign in to continue your learning journey
-            </Text>
+            <View style={styles.separator} />
           </MotiView>
 
-          {/* Form Section */}
+          {/* TERMINAL FORM */}
           <MotiView
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: 200 }}
+            from={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 300 }}
             style={styles.form}
           >
+            {/* EMAIL INPUT */}
             <View
               style={[
-                styles.inputContainer,
-                { backgroundColor: theme.inputBg },
+                styles.inputWrapper,
+                { borderColor: theme.border, backgroundColor: theme.inputBg },
               ]}
             >
-              <Feather
-                name="mail"
-                size={20}
-                color={theme.placeholder}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                placeholder="Email Address"
-                placeholderTextColor={theme.placeholder}
-                style={[styles.input, { color: theme.text }]}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+              <View style={styles.inputLabel}>
+                <Text
+                  style={[styles.mono, { color: theme.accent, fontSize: 8 }]}
+                >
+                  IDENTIFIER
+                </Text>
+              </View>
+              <View style={styles.inputRow}>
+                <Feather
+                  name="mail"
+                  size={16}
+                  color={theme.accent}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="USER@NEURAL_LINK"
+                  placeholderTextColor={theme.muted}
+                  style={[
+                    styles.input,
+                    { color: theme.text, fontFamily: MONO },
+                  ]}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
             </View>
 
+            {/* PASSWORD INPUT */}
             <View
               style={[
-                styles.inputContainer,
-                { backgroundColor: theme.inputBg },
+                styles.inputWrapper,
+                { borderColor: theme.border, backgroundColor: theme.inputBg },
               ]}
             >
-              <Feather
-                name="lock"
-                size={20}
-                color={theme.placeholder}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor={theme.placeholder}
-                secureTextEntry
-                style={[styles.input, { color: theme.text }]}
-                onChangeText={setPassword}
-              />
+              <View style={styles.inputLabel}>
+                <Text
+                  style={[styles.mono, { color: theme.accent, fontSize: 8 }]}
+                >
+                  ACCESS_KEY
+                </Text>
+              </View>
+              <View style={styles.inputRow}>
+                <Feather
+                  name="lock"
+                  size={16}
+                  color={theme.accent}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor={theme.muted}
+                  secureTextEntry
+                  style={[
+                    styles.input,
+                    { color: theme.text, fontFamily: MONO },
+                  ]}
+                  onChangeText={setPassword}
+                />
+              </View>
             </View>
 
+            {/* LOGIN BUTTON */}
             <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.button, { backgroundColor: theme.primary }]}
+              activeOpacity={0.9}
+              style={[styles.button, { backgroundColor: theme.accent }]}
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.buttonText}>
-                {loading ? "Verifying..." : "Login"}
+              <Text style={[styles.mono, styles.buttonText]}>
+                {loading ? "ESTABLISHING..." : "INITIALIZE_UPLINK"}
               </Text>
+              <MaterialCommunityIcons
+                name="connection"
+                size={18}
+                color="black"
+              />
             </TouchableOpacity>
 
+            {/* FOOTER ACTIONS */}
             <TouchableOpacity
               onPress={() => router.replace("/signup")}
               style={styles.signupLink}
             >
-              <Text style={[styles.footerText, { color: theme.placeholder }]}>
-                New to Pylotix?{" "}
-                <Text style={{ color: theme.primary, fontWeight: "700" }}>
-                  Sign Up
-                </Text>
+              <Text style={[styles.mono, { color: theme.muted, fontSize: 11 }]}>
+                NEW_USER?{" "}
+                <Text style={{ color: theme.accent }}>CREATE_IDENTITY</Text>
               </Text>
             </TouchableOpacity>
           </MotiView>
@@ -173,75 +208,60 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    resizeMode: "contain",
+  container: { flex: 1 },
+  mono: { fontFamily: MONO, letterSpacing: 2, fontWeight: "700" },
+  scrollContent: { flexGrow: 1, justifyContent: "center", padding: 30 },
+  header: { alignItems: "center", marginBottom: 50 },
+  logoFrame: {
+    width: 90,
+    height: 90,
+    borderWidth: 1,
+    padding: 15,
     marginBottom: 20,
+    backgroundColor: "rgba(255,255,255,0.02)",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -0.5,
+  logo: { width: "100%", height: "100%", resizeMode: "contain" },
+  version: { fontSize: 9, color: "rgba(0, 242, 254, 0.4)", marginBottom: 5 },
+  title: { fontSize: 24, fontWeight: "200", letterSpacing: 6 },
+  separator: {
+    height: 1,
+    width: 40,
+    backgroundColor: "#00F2FE",
+    marginTop: 20,
   },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 8,
-    textAlign: "center",
+
+  form: { width: "100%" },
+  inputWrapper: {
+    borderWidth: 1,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 20,
+    position: "relative",
   },
-  form: {
-    width: "100%",
+  inputLabel: {
+    position: "absolute",
+    top: -7,
+    left: 10,
+    backgroundColor: "#020205",
+    paddingHorizontal: 5,
   },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    height: 60,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
-  },
+  inputRow: { flexDirection: "row", alignItems: "center", height: 40 },
+  inputIcon: { marginRight: 15 },
+  input: { flex: 1, fontSize: 13 },
+
   button: {
     height: 60,
-    borderRadius: 16,
+    borderRadius: 2,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#4F46E5",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    gap: 12,
+    shadowColor: "#00F2FE",
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 8,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  signupLink: {
-    marginTop: 25,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 15,
-  },
+  buttonText: { color: "black", fontSize: 12, fontWeight: "900" },
+  signupLink: { marginTop: 30, alignItems: "center" },
 });
