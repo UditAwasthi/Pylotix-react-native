@@ -4,265 +4,322 @@ import {
   Text,
   View,
   TouchableOpacity,
-  useColorScheme,
-  Image,
   Platform,
   StatusBar,
+  Dimensions,
+  useColorScheme,
+  Image,
 } from "react-native";
 import { MotiView, MotiText } from "moti";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronRight, ShieldCheck } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import { Gyroscope } from "expo-sensors";
-import { Zap, ChevronRight, Cpu, ShieldCheck } from "lucide-react-native";
+import { useFonts, Marcellus_400Regular } from "@expo-google-fonts/marcellus";
+import {
+  Poppins_300Light,
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+} from "@expo-google-fonts/poppins";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withRepeat,
+  withTiming,
   interpolate,
+  withSpring,
 } from "react-native-reanimated";
 
-const MONO = Platform.OS === "ios" ? "Menlo" : "monospace";
+const { width, height } = Dimensions.get("window");
 
-export default function WelcomeScreen() {
+export default function IndustryStandardBlueScreen() {
   const isDark = useColorScheme() === "dark";
 
-  // Parallax Logic
-  const gyroX = useSharedValue(0);
-  const gyroY = useSharedValue(0);
-
-  useEffect(() => {
-    Gyroscope.setUpdateInterval(16);
-    const subscription = Gyroscope.addListener(({ x, y }) => {
-      gyroX.value = withSpring(x, { damping: 15 });
-      gyroY.value = withSpring(y, { damping: 15 });
-    });
-    return () => subscription.remove();
-  }, []);
-
-  const animatedHeroStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(gyroY.value, [-2, 2], [-10, 10]);
-    const rotateX = interpolate(gyroX.value, [-2, 2], [10, -10]);
-    return {
-      transform: [
-        { perspective: 1000 },
-        { rotateY: `${rotateY}deg` },
-        { rotateX: `${rotateX}deg` },
-      ],
-    };
+  let [fontsLoaded] = useFonts({
+    Marcellus_400Regular,
+    Poppins_300Light,
+    Poppins_400Regular,
+    Poppins_600SemiBold,
   });
 
   const theme = {
-    background: "#020205", // Deepest black
-    card: "rgba(255, 255, 255, 0.03)",
-    text: "#FFFFFF",
-    primary: "#00F2FE", // Cyan Neon
-    muted: "rgba(255, 255, 255, 0.4)",
-    border: "rgba(0, 242, 254, 0.2)",
+    background: isDark ? "#04080F" : "#F5F9FF",
+    card: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(255, 255, 255, 0.8)",
+    border: isDark ? "rgba(0, 122, 255, 0.2)" : "rgba(0, 122, 255, 0.1)",
+    primary: "#007AFF", // Industry Standard Blue
+    accent: "#00F2FE", // High-Tech Cyan
+    text: isDark ? "#FFFFFF" : "#1C1C1E",
+    muted: isDark ? "rgba(255, 255, 255, 0.5)" : "rgba(28, 28, 30, 0.6)",
   };
 
-  return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
+  const gyroX = useSharedValue(0);
+  const gyroY = useSharedValue(0);
+  const glowPulse = useSharedValue(0);
 
-      {/* BACKGROUND DECOR - NEURAL GRID */}
-      <View style={styles.backgroundOverlay}>
-        <MotiView
-          from={{ opacity: 0 }}
-          animate={{ opacity: 0.1 }}
-          transition={{ duration: 2000 }}
-          style={[styles.glowOrb, { backgroundColor: theme.primary }]}
+  useEffect(() => {
+    glowPulse.value = withRepeat(withTiming(1, { duration: 4000 }), -1, true);
+
+    Gyroscope.setUpdateInterval(16);
+    const subscription = Gyroscope.addListener(({ x, y }) => {
+      gyroX.value = withSpring(x * 10, { damping: 20 });
+      gyroY.value = withSpring(y * 10, { damping: 20 });
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const logoParallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: gyroY.value * 1.5 },
+      { translateY: gyroX.value * 1.5 },
+    ],
+  }));
+
+  const cardParallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: gyroY.value * 0.5 },
+      { translateY: gyroX.value * 0.5 },
+      { rotateX: `${-gyroX.value * 0.08}deg` },
+      { rotateY: `${gyroY.value * 0.08}deg` },
+    ],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glowPulse.value, [0, 1], [0.15, 0.35]),
+    transform: [{ scale: interpolate(glowPulse.value, [0, 1], [1, 1.2]) }],
+  }));
+
+  const handleAction = (path: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.replace(path);
+  };
+
+  if (!fontsLoaded) return null;
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
+      {/* BLUE AMBIENT GLOWS */}
+      <View style={StyleSheet.absoluteFill}>
+        <Animated.View
+          style={[
+            styles.glowOrb,
+            { backgroundColor: theme.primary, top: -100, left: -50 },
+            glowStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.glowOrb,
+            { backgroundColor: theme.accent, bottom: -150, right: -50 },
+            glowStyle,
+          ]}
         />
       </View>
 
-      <View style={styles.content}>
-        {/* TOP HUD INFO */}
-        <View style={styles.topHud}>
-          <Cpu size={14} color={theme.primary} />
-          <Text style={[styles.mono, { color: theme.primary, fontSize: 10 }]}>
-            PROTOCOL_INIT: 0x229
-          </Text>
-        </View>
-
-        {/* HERO LOGO WITH PARALLAX */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          style={styles.heroSection}
-        >
-          <Animated.View style={[styles.logoWrapper, animatedHeroStyle]}>
-            <View style={[styles.logoFrame, { borderColor: theme.border }]}>
-              <Image
-                source={require("../../assets/images/logo.png")}
-                style={styles.logo}
-              />
-            </View>
-            {/* Pulsing Scanner Ring */}
-            <MotiView
-              from={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.2, opacity: 0.3 }}
-              transition={{ loop: true, duration: 2000, type: "timing" }}
-              style={[styles.scannerRing, { borderColor: theme.primary }]}
-            />
-          </Animated.View>
-        </MotiView>
-
-        {/* BRANDING SECTION */}
-        <View style={styles.textSection}>
-          <View style={styles.badge}>
-            <Zap size={10} color={theme.primary} />
-            <Text style={[styles.mono, { color: theme.primary, fontSize: 9 }]}>
-              LIVE_NODE_SYNC
-            </Text>
-          </View>
-
-          <MotiText
-            from={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 400 }}
-            style={[styles.title, { color: theme.text }]}
-          >
-            PYLOTIX
-          </MotiText>
-
-          <MotiText
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 600 }}
-            style={[styles.subtitle, { color: theme.muted }]}
-          >
-            Connect to the neural stream. Experience deep-learning optimization
-            with Pylotix core.
-          </MotiText>
-        </View>
-
-        {/* ACTION FOOTER */}
-        <View style={styles.footer}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.content}>
+          {/* VERSION TAG */}
           <MotiView
-            from={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 800 }}
+            from={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            style={styles.headerDecoration}
           >
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => router.replace("/signup")}
-              style={[styles.mainButton, { backgroundColor: theme.primary }]}
+            <Text
+              style={[
+                styles.versionText,
+                { color: theme.primary, fontFamily: "Poppins_600SemiBold" },
+              ]}
             >
-              <Text style={[styles.mono, styles.buttonText]}>
-                INITIALIZE_SYNC
-              </Text>
-              <ChevronRight size={18} color="#000" />
-            </TouchableOpacity>
+              v2.0.4
+            </Text>
           </MotiView>
 
-          <TouchableOpacity
-            onPress={() => router.replace("/login")}
-            style={styles.loginLink}
-          >
-            <Text style={[styles.mono, { color: theme.muted, fontSize: 11 }]}>
-              EXISTING_UPLINK?{" "}
-              <Text style={{ color: theme.primary }}>RESUME_SESSION</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          {/* LOGO UNIT */}
+          <View style={styles.heroSection}>
+            <Animated.View style={[styles.logoWrapper, logoParallaxStyle]}>
+              <View
+                style={[
+                  styles.glassCircle,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                ]}
+              >
+                <Image
+                  source={require("../../assets/images/logo.png")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              {/* Technical Orbital Ring */}
+              <MotiView
+                animate={{ rotate: "360deg" }}
+                transition={{ loop: true, duration: 15000, type: "timing" }}
+                style={[
+                  styles.ring,
+                  {
+                    borderColor: theme.primary,
+                    borderStyle: "dashed",
+                    opacity: 0.2,
+                  },
+                ]}
+              />
+            </Animated.View>
+          </View>
 
-      {/* HUD DECORATIVE FOOTER */}
-      <View style={styles.bottomHud}>
-        <ShieldCheck size={12} color={theme.muted} />
-        <Text style={[styles.mono, { color: theme.muted, fontSize: 8 }]}>
-          ENCRYPTED_DATA_LINE_SECURED
-        </Text>
-      </View>
-    </SafeAreaView>
+          {/* MAIN CARD */}
+          <Animated.View
+            style={[
+              styles.glassCard,
+              { backgroundColor: theme.card, borderColor: theme.border },
+              cardParallaxStyle,
+            ]}
+          >
+            <MotiText
+              style={[
+                styles.title,
+                { color: theme.text, fontFamily: "Marcellus_400Regular" },
+              ]}
+            >
+              PYLOTIX
+            </MotiText>
+            <View
+              style={[styles.accentBar, { backgroundColor: theme.primary }]}
+            />
+            <Text
+              style={[
+                styles.subtitle,
+                { color: theme.muted, fontFamily: "Poppins_400Regular" },
+              ]}
+            >
+              Advanced Data Intelligence Platform.{"\n"}
+              Built for the next generation of enterprise.
+            </Text>
+          </Animated.View>
+
+          {/* FOOTER ACTIONS */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleAction("/signup")}
+              style={[styles.premiumButton, { backgroundColor: theme.primary }]}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: "#FFF", fontFamily: "Poppins_600SemiBold" },
+                ]}
+              >
+                Get Started
+              </Text>
+              <ChevronRight size={18} color="#FFF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleAction("/login")}
+              style={styles.loginBtn}
+            >
+              <Text
+                style={[
+                  styles.loginText,
+                  { color: theme.text, fontFamily: "Poppins_400Regular" },
+                ]}
+              >
+                Already have an account?{" "}
+                <Text style={{ color: theme.primary, fontWeight: "700" }}>
+                  Sign In
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* SECURITY STATUS */}
+          <View style={styles.securityBadge}>
+            <ShieldCheck size={14} color={theme.primary} />
+            <Text style={[styles.securityText, { color: theme.muted }]}>
+              End-to-End Encrypted Environment
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  mono: { fontFamily: MONO, letterSpacing: 2, fontWeight: "700" },
-  backgroundOverlay: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
   glowOrb: {
     position: "absolute",
-    top: -150,
-    right: -150,
-    width: 400,
-    height: 400,
-    borderRadius: 200,
-    filter: Platform.OS === "ios" ? "blur(80px)" : undefined, // Android doesn't support filter well
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    filter: Platform.OS === "ios" ? "blur(80px)" : undefined,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 35,
+    alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 40,
   },
-
-  // HUD Elements
-  topHud: { flexDirection: "row", alignItems: "center", gap: 10, opacity: 0.6 },
-  bottomHud: {
-    position: "absolute",
-    bottom: 20,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  // Hero Section
-  heroSection: { alignItems: "center", justifyContent: "center" },
-  logoWrapper: {
-    width: 180,
-    height: 180,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoFrame: {
+  headerDecoration: { paddingHorizontal: 20 },
+  versionText: { fontSize: 10, letterSpacing: 2, opacity: 0.8 },
+  heroSection: { height: 220, justifyContent: "center", alignItems: "center" },
+  logoWrapper: { justifyContent: "center", alignItems: "center" },
+  glassCircle: {
     width: 140,
     height: 140,
-    borderRadius: 2, // Sharp edges
+    borderRadius: 70,
     borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.02)",
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+      },
+      android: { elevation: 5 },
+    }),
   },
-  logo: { width: 90, height: 90, resizeMode: "contain" },
-  scannerRing: {
+  logo: { width: 70, height: 70 },
+  ring: {
     position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     borderWidth: 1,
-    borderStyle: "dashed",
   },
-
-  // Text
-  textSection: { marginTop: -20 },
-  badge: {
-    flexDirection: "row",
+  glassCard: {
+    width: width * 0.85,
+    paddingVertical: 45,
+    paddingHorizontal: 25,
+    borderRadius: 24,
+    borderWidth: 1,
     alignItems: "center",
-    gap: 6,
-    marginBottom: 15,
   },
-  title: { fontSize: 44, fontWeight: "200", letterSpacing: 10, lineHeight: 52 },
-  subtitle: { fontSize: 13, marginTop: 15, lineHeight: 22, letterSpacing: 0.5 },
-
-  // Buttons
-  footer: { width: "100%", gap: 20 },
-  mainButton: {
-    flexDirection: "row",
+  title: { fontSize: 40, letterSpacing: 8, textAlign: "center" },
+  accentBar: { width: 40, height: 3, borderRadius: 2, marginVertical: 20 },
+  subtitle: { fontSize: 14, textAlign: "center", lineHeight: 22, opacity: 0.9 },
+  footer: { width: "100%", alignItems: "center", gap: 20 },
+  premiumButton: {
+    width: width * 0.8,
     height: 60,
-    borderRadius: 2,
-    justifyContent: "center",
+    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#00F2FE",
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
-    elevation: 8,
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  buttonText: { color: "#000", fontSize: 13, fontWeight: "900" },
-  loginLink: { alignItems: "center", paddingVertical: 10 },
+  buttonText: { fontSize: 16 },
+  loginBtn: { padding: 10 },
+  loginText: { fontSize: 13 },
+  securityBadge: { flexDirection: "row", alignItems: "center", gap: 8 },
+  securityText: { fontSize: 10, letterSpacing: 0.3 },
 });

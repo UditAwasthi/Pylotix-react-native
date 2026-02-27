@@ -1,19 +1,47 @@
 import { Stack } from "expo-router";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import * as NavigationBar from "expo-navigation-bar";
+import { useEffect } from "react";
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      // Make navigation bar transparent
+      NavigationBar.setBackgroundColorAsync("transparent");
+
+      // Hide navigation bar (immersive mode)
+      NavigationBar.setVisibilityAsync("hidden");
+
+      // Allow swipe to temporarily show nav bar
+      NavigationBar.setBehaviorAsync("overlay-swipe");
+    }
+  }, []);
+
   return (
     <SafeAreaProvider>
-      {/* This View acts as your Global Frame. 
-          The paddingHorizontal here will affect every screen in the app.
-      */}
-      <View style={styles.appContainer}>
-        <Stack screenOptions={{ headerShown: false }}>
+      {/* Fully control status bar */}
+      <StatusBar hidden={true} />
+
+      <View style={styles.container}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "fade",
+            contentStyle: {
+              backgroundColor: "#04080F", // your global app background
+            },
+          }}
+        >
           <Stack.Screen name="index" />
+
           <Stack.Screen name="auth" />
+
           <Stack.Screen name="(tabs)" />
+
           <Stack.Screen name="course" />
+
           <Stack.Screen name="roadmaps" />
         </Stack>
       </View>
@@ -22,9 +50,9 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  appContainer: {
+  container: {
     flex: 1,
-    backgroundColor: "#020205", // Matches your Dark Theme
-    paddingVertical: 15,      // Adjust this number for more/less gap
+
+    backgroundColor: "#04080F",
   },
 });

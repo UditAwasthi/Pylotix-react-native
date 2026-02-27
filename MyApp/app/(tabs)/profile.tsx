@@ -19,20 +19,17 @@ import { MotiView, MotiText } from "moti";
 import { Easing } from "react-native-reanimated";
 import {
   LogOut,
-  Cpu,
-  Zap,
-  Activity,
-  Shield,
   Box,
-  Terminal,
   Layers,
   Fingerprint,
+  User as UserIcon,
+  ShieldCheck,
+  Zap,
+  Cpu,
 } from "lucide-react-native";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const API = "https://st-v01.onrender.com";
-
-// Tech-Font selection based on platform
 const MONO = Platform.OS === "ios" ? "Menlo" : "monospace";
 
 export default function NeuralLinkProfile() {
@@ -63,33 +60,48 @@ export default function NeuralLinkProfile() {
       const data = await res.json();
       setProfile(data);
     } catch (e) {
-      console.log(e);
+      console.error("PROFILE_FETCH_ERROR:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  if (loading || !profile)
+  if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: theme.bg }]}>
         <ActivityIndicator size="large" color={theme.accent} />
+        <Text
+          style={[
+            styles.monoText,
+            { color: theme.accent, marginTop: 15, fontSize: 10 },
+          ]}
+        >
+          DECRYPTING_PROFILE...
+        </Text>
       </View>
     );
+  }
 
-  const { user, stats, courses } = profile;
+  // --- SAFE DATA HANDLERS ---
+  // Using optional chaining and defaults to prevent "undefined" property crashes
+  const user = profile?.user || {};
+  const stats = profile?.stats || { streak: 0, totalLearningTime: 0 };
+  const courses = profile?.courses || [];
+  const hasAvatar = !!user?.avatar;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* AMBIENT BACKGROUND LAYER */}
+      {/* AMBIENT BACKGROUND GLOW */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <MotiView
-          from={{ opacity: 0.1, scale: 1, x: -50 }}
-          animate={{ opacity: 0.25, scale: 1.5, x: 50 }}
-          transition={{ loop: true, duration: 6000, type: "timing" }}
+          from={{ opacity: 0.1, scale: 1 }}
+          animate={{ opacity: 0.2, scale: 1.5 }}
+          transition={{ loop: true, duration: 8000, type: "timing" }}
           style={[
             styles.glowOrb,
-            { backgroundColor: theme.accent, top: "10%" },
+            { backgroundColor: theme.accent, top: "5%", left: "-20%" },
           ]}
         />
       </View>
@@ -100,65 +112,75 @@ export default function NeuralLinkProfile() {
       >
         {/* SECTION 1: THE BIOMETRIC CORE */}
         <View style={styles.coreContainer}>
+          {/* Rotating Outer Ring */}
           <MotiView
             from={{ rotate: "0deg" }}
             animate={{ rotate: "360deg" }}
             transition={{
               loop: true,
-              duration: 20000,
+              duration: 25000,
               type: "timing",
               easing: Easing.linear,
             }}
             style={[styles.orbitalRing, { borderColor: theme.border }]}
           />
 
-          <View style={[styles.avatarContainer, { borderColor: theme.border }]}>
-            <Image
-              source={{ uri: user.avatar || "https://i.pravatar.cc/300" }}
-              style={styles.avatarImg}
-            />
+          <View
+            style={[
+              styles.avatarContainer,
+              { borderColor: theme.border, backgroundColor: theme.glass },
+            ]}
+          >
+            {hasAvatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+            ) : (
+              <View style={styles.placeholderIcon}>
+                <UserIcon size={48} color={theme.accent} strokeWidth={1} />
+                <Text
+                  style={[
+                    styles.monoText,
+                    { fontSize: 8, color: theme.accent, marginTop: 5 },
+                  ]}
+                >
+                  NO_VISUAL_ID
+                </Text>
+              </View>
+            )}
 
-            {/* THE BIOMETRIC SCAN LINE */}
+            {/* SCANNER ANIMATION */}
             <MotiView
-              from={{ translateY: -70, opacity: 0 }}
-              animate={{ translateY: 70, opacity: 1 }}
+              from={{ translateY: -80, opacity: 0 }}
+              animate={{ translateY: 80, opacity: 1 }}
               transition={{
                 loop: true,
-                duration: 2500,
+                duration: 3000,
                 type: "timing",
                 easing: Easing.inOut(Easing.ease),
               }}
               style={[styles.scanLine, { backgroundColor: theme.accent }]}
             />
-            <View
-              style={[
-                styles.overlay,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(0, 242, 254, 0.05)"
-                    : "transparent",
-                },
-              ]}
-            />
           </View>
 
           <View style={styles.identityContainer}>
             <MotiText
-              from={{ opacity: 0, tracking: 10 }}
-              animate={{ opacity: 1, tracking: 6 }}
+              from={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               style={[styles.idText, { color: theme.text }]}
             >
-              {user.name.toUpperCase()}
+              {user?.name ? user.name.toUpperCase() : "ANONYMOUS_ENTITY"}
             </MotiText>
+
             <View style={styles.statusRow}>
-              <Fingerprint size={10} color={theme.accent} />
+              <Fingerprint size={12} color={theme.accent} />
               <Text
                 style={[
                   styles.monoText,
-                  { color: theme.accent, marginLeft: 5 },
+                  { color: theme.accent, marginLeft: 6, fontSize: 10 },
                 ]}
               >
-                BIOMETRIC_LINK_VERIFIED
+                {hasAvatar
+                  ? "BIOMETRIC_ENCRYPTION_ACTIVE"
+                  : "NEURAL_SIGNATURE_ONLY"}
               </Text>
             </View>
           </View>
@@ -173,95 +195,112 @@ export default function NeuralLinkProfile() {
         >
           <StatBlock
             label="SYNC_RATE"
-            value="98.2"
+            value="98.4"
             unit="%"
             color={theme.accent}
           />
           <View style={[styles.vLine, { backgroundColor: theme.border }]} />
           <StatBlock
             label="NEURAL_STREAK"
-            value={stats.streak}
+            value={stats.streak || 0}
             unit="DAYS"
             color={theme.secondary}
           />
           <View style={[styles.vLine, { backgroundColor: theme.border }]} />
           <StatBlock
-            label="RUNTIME"
-            value={Math.floor(stats.totalLearningTime / 3600)}
+            label="UPLINK_TIME"
+            value={Math.floor((stats.totalLearningTime || 0) / 3600)}
             unit="HRS"
             color="#FFF"
           />
         </View>
 
-        {/* SECTION 3: MODULE NODES */}
+        {/* SECTION 3: DATA NODES (COURSES) */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.label, { color: theme.muted }]}>
-            // NEURAL_DATABASE_NODES
+            // ACTIVE_DATA_NODES
           </Text>
-          <Layers size={12} color={theme.muted} />
+          <Layers size={14} color={theme.muted} />
         </View>
 
         <View style={styles.nexusGrid}>
-          {courses.slice(0, 4).map((c: any, i: number) => (
-            <MotiView
-              key={i}
-              from={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 300 + i * 100 }}
-              style={[
-                styles.nodeCard,
-                { backgroundColor: theme.glass, borderColor: theme.border },
-              ]}
-            >
-              <Box
-                size={18}
-                color={i === 0 ? theme.accent : theme.muted}
-                style={{ marginBottom: 12 }}
-              />
-              <Text
-                numberOfLines={1}
-                style={[styles.nodeTitle, { color: theme.text }]}
-              >
-                {c.title}
-              </Text>
-              <Text
+          {courses.length > 0 ? (
+            courses.slice(0, 4).map((c: any, i: number) => (
+              <MotiView
+                key={i}
+                from={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 100 * i }}
                 style={[
-                  styles.monoText,
-                  { fontSize: 8, marginTop: 4, color: theme.muted },
+                  styles.nodeCard,
+                  { backgroundColor: theme.glass, borderColor: theme.border },
                 ]}
               >
-                NODE_0{i + 1}
-              </Text>
-            </MotiView>
-          ))}
+                <Box
+                  size={16}
+                  color={i === 0 ? theme.accent : theme.muted}
+                  style={{ marginBottom: 10 }}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[styles.nodeTitle, { color: theme.text }]}
+                >
+                  {c.title || "Unknown Node"}
+                </Text>
+                <Text
+                  style={[
+                    styles.monoText,
+                    { fontSize: 7, marginTop: 4, color: theme.muted },
+                  ]}
+                >
+                  NODE_ID: 0x{i + 104}
+                </Text>
+              </MotiView>
+            ))
+          ) : (
+            <Text
+              style={[
+                styles.monoText,
+                {
+                  color: theme.muted,
+                  fontSize: 10,
+                  width: "100%",
+                  textAlign: "center",
+                  marginTop: 20,
+                },
+              ]}
+            >
+              NO_ACTIVE_NODES_FOUND
+            </Text>
+          )}
         </View>
 
-   
-        {/* DISCONNECT */}
+        {/* DISCONNECT ACTION */}
         <TouchableOpacity
           style={styles.disconnectBtn}
-          onPress={() => {
-            AsyncStorage.clear();
-            router.replace("/");
+          onPress={async () => {
+            await AsyncStorage.clear();
+            router.replace("/auth/WelcomeScreen");
           }}
         >
+          <LogOut size={16} color={theme.muted} />
           <Text style={[styles.disconnectText, { color: theme.muted }]}>
-            TERMINATE_NEURAL_LINK
+            TERMINATE_NEURAL_SESSION
           </Text>
-          <LogOut size={14} color={theme.muted} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+// --- SUB-COMPONENTS ---
 function StatBlock({ label, value, unit, color }: any) {
   return (
     <View style={styles.statBlock}>
       <Text
         style={[
           styles.monoText,
-          { fontSize: 8, color: "#888", marginBottom: 5 },
+          { fontSize: 8, color: "#888", marginBottom: 4 },
         ]}
       >
         {label}
@@ -279,27 +318,28 @@ function StatBlock({ label, value, unit, color }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scroll: { padding: 25, paddingTop: 40 },
+  scroll: { padding: 25, paddingTop: 20 },
   glowOrb: {
     position: "absolute",
-    width: 400,
-    height: 400,
-    borderRadius: 200,
-    filter: "blur(100px)" as any,
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    filter: Platform.OS === "ios" ? "blur(80px)" : undefined,
   },
 
-  // Header & Core
+  // Biometric Core
   coreContainer: {
     alignItems: "center",
-    height: 300,
+    height: 280,
     justifyContent: "center",
   },
   orbitalRing: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     borderWidth: 0.5,
     position: "absolute",
+    borderStyle: "dashed",
   },
   avatarContainer: {
     width: 140,
@@ -310,7 +350,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarImg: { width: "100%", height: "100%", opacity: 0.8 },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+    opacity: 0.8,
+    resizeMode: "cover",
+  },
+  placeholderIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0.6,
+  },
   scanLine: {
     position: "absolute",
     width: "120%",
@@ -320,68 +370,57 @@ const styles = StyleSheet.create({
     shadowColor: "#00F2FE",
     zIndex: 10,
   },
-  overlay: { ...StyleSheet.absoluteFillObject },
 
-  identityContainer: { alignItems: "center", marginTop: 30 },
-  idText: { fontSize: 24, fontWeight: "200", letterSpacing: 6 }, // Ultra light, high tracking
-  statusRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  monoText: { fontFamily: MONO, letterSpacing: 1, fontWeight: "600" },
+  identityContainer: { alignItems: "center", marginTop: 25 },
+  idText: { fontSize: 22, fontWeight: "300", letterSpacing: 5 },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  monoText: { fontFamily: MONO, letterSpacing: 1 },
 
-  // Stats Grid
+  // Stats
   statsGrid: {
     flexDirection: "row",
     padding: 20,
-    borderRadius: 2,
+    borderRadius: 4,
     borderWidth: 1,
-    marginTop: 30,
+    marginTop: 20,
     justifyContent: "space-between",
   },
   statBlock: { alignItems: "center" },
-  statValue: { fontSize: 22, fontWeight: "300", fontFamily: MONO },
-  vLine: { width: 1, height: "100%" },
+  statValue: { fontSize: 20, fontWeight: "300", fontFamily: MONO },
+  vLine: { width: 1, height: "100%", opacity: 0.3 },
 
-  // Nexus Grid
+  // Nodes
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
+    marginTop: 35,
+    marginBottom: 15,
   },
   label: { fontSize: 10, letterSpacing: 2, fontWeight: "700" },
   nexusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   nodeCard: {
     width: (width - 62) / 2,
-    padding: 20,
+    padding: 18,
     borderWidth: 1,
-    borderRadius: 2,
+    borderRadius: 4,
   },
-  nodeTitle: { fontSize: 12, fontWeight: "800", letterSpacing: 1 },
-
-  // Terminal
-  terminal: {
-    marginTop: 30,
-    padding: 15,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    borderWidth: 1,
-  },
-  terminalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 12,
-  },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#00F2FE" },
-  log: { fontFamily: MONO, fontSize: 10, color: "#555", marginBottom: 4 },
+  nodeTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
 
   // Footer
   disconnectBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    marginTop: 50,
-    marginBottom: 30,
+    gap: 12,
+    marginTop: 60,
+    marginBottom: 40,
+    opacity: 0.5,
   },
-  disconnectText: { fontSize: 10, fontWeight: "700", letterSpacing: 2 },
+  disconnectText: { fontSize: 9, fontWeight: "700", letterSpacing: 2 },
 });
